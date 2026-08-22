@@ -1,18 +1,30 @@
 from flask import Blueprint, jsonify, request
 from app import db
 from app.models.telemetry import Telemetry
+from sqlalchemy.exc import OperationalError
 
 bp = Blueprint('api', __name__)
 
 # ==================== TELEMETRY ENDPOINTS ====================
 
 @bp.route('/telemetry/latest', methods=['GET'])
+@bp.route('/api/telemetry/latest', methods=['GET'])
 def get_latest_telemetry():
     try:
         latest = Telemetry.query.order_by(Telemetry.timestamp.desc()).first()
         if latest:
             return jsonify(latest.to_dict())
-        return jsonify({'error': 'No telemetry data found'}), 404
+        return jsonify({
+            'status': 'ok',
+            'data': None,
+            'message': 'No telemetry data found'
+        }), 200
+    except OperationalError:
+        return jsonify({
+            'status': 'ok',
+            'data': None,
+            'message': 'No telemetry data found'
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

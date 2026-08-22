@@ -27,6 +27,12 @@ python test_full.py
 API Documentation
 
 See Swagger UI (if enabled) or the inline docstrings.
+
+## Telemetry database compatibility
+
+- On startup, SolarNode now automatically reconciles legacy SQLite `telemetry` tables that were created without an `id` column.
+- Existing telemetry rows are preserved, and `/telemetry/latest` works without manual DB edits.
+- No extra upgrade command is required for local SQLite environments.
 Team
 
     Emna (Team Leader)

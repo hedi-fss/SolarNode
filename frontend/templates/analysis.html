@@ -58,7 +58,7 @@ function trainModel() {
     const btn = document.querySelector('.btn-primary');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
-    fetch('/ml/train', {
+    fetch('/api/ml/train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contamination: 0.1 })
@@ -82,7 +82,7 @@ function trainModel() {
 }
 
 function refreshAnomalies() {
-    fetch('/ml/anomalies?limit=100')
+    fetch('/api/ml/anomalies?limit=100')
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('anomaly-list');
@@ -103,7 +103,7 @@ function refreshAnomalies() {
 }
 
 function refreshPredictions() {
-    fetch('/ml/predict')
+    fetch('/api/ml/predict')
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('prediction-list');
@@ -121,7 +121,7 @@ function refreshPredictions() {
 }
 
 function loadModelPerformance() {
-    fetch('/ml/evaluate')
+    fetch('/api/ml/evaluate')
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('model-performance');

@@ -526,7 +526,7 @@ function trainAI() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
     document.getElementById('ml-status').innerHTML = '<span class="badge bg-warning text-dark">Training...</span>';
-    fetch('/ml/train', {
+    fetch('/api/ml/train', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contamination: 0.1 })
@@ -554,7 +554,7 @@ function trainAI() {
 }
 
 function refreshAnomalies() {
-    fetch('/ml/anomalies?limit=100')
+    fetch('/api/ml/anomalies?limit=100')
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('anomaly-list');
@@ -573,7 +573,7 @@ function refreshAnomalies() {
 }
 
 function refreshPredictions() {
-    fetch('/ml/predict')
+    fetch('/api/ml/predict')
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('prediction-list');
@@ -591,7 +591,7 @@ function refreshPredictions() {
 }
 
 function refreshRecommendations() {
-    fetch('/ml/recommendations')
+    fetch('/api/ml/recommendations')
         .then(r => r.json())
         .then(data => {
             const container = document.getElementById('recommendation-list');
@@ -667,7 +667,7 @@ function refreshHardwareStatus() {
 // ML STATUS
 // ============================================================
 function loadMLStatus() {
-    fetch('/ml/status')
+    fetch('/api/ml/status')
         .then(r => r.json())
         .then(data => {
             if (data.is_trained) {

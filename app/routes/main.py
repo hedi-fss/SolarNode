@@ -1,24 +1,20 @@
 """Main Routes"""
 from flask import Blueprint, render_template
 
-bp = Blueprint('main', __name__)
+bp = Blueprint("main", __name__)
 
-
-@bp.route('/')
+@bp.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-
-@bp.route('/dashboard')
+@bp.route("/dashboard")
 def dashboard():
-    return render_template('dashboard.html')
+    return render_template("dashboard.html")
 
-
-@bp.route('/topology')
-def topology():
-    return render_template('topology.html')
-
-
-@bp.route('/analysis')
+@bp.route("/analysis")
 def analysis():
-    return render_template('analysis.html')
+    return render_template("analysis.html")
+
+@bp.route("/topology")
+def topology():
+    return render_template("dashboard.html")

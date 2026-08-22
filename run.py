@@ -16,7 +16,7 @@ try:
         port = int(os.environ.get('PORT', config.PORT))
         logger.info(f"Starting SolarNode v2.0 on port {port}")
         # Removed allow_unsafe_werkzeug - not valid for eventlet
-        socketio.run(app, host='0.0.0.0', port=port, debug=True)
+        socketio.run(app, host='0.0.0.0', port=port, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
 except Exception as e:
     logger.exception("Failed to start application")
     raise

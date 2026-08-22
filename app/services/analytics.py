@@ -6,8 +6,8 @@ from app.models import Telemetry
 
 class AnalyticsService:
     def __init__(self):
-        self.model = IsolationForest(contamination=0.1, random_state=42)
-        self.is_trained = False
+        from sklearn.ensemble import IsolationForest  # lazy import
+        self.model = IsolationForest()
 
     def train(self):
         """Train anomaly detection model on historical data"""

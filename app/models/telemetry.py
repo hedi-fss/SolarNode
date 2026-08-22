@@ -14,6 +14,7 @@ class Telemetry(db.Model):
     battery = db.Column(db.Float)
     temperature = db.Column(db.Float)
     humidity = db.Column(db.Float)
+    light = db.Column(db.Float)
     packet_type = db.Column(db.String(20))
     hop_count = db.Column(db.Integer, default=0)
 
@@ -28,6 +29,7 @@ class Telemetry(db.Model):
             'battery': self.battery,
             'temperature': self.temperature,
             'humidity': self.humidity,
+            'light': self.light,
             'packet_type': self.packet_type,
             'hop_count': self.hop_count
         }

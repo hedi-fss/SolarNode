@@ -25,7 +25,6 @@ def create_app():
 
     from app.routes import register_blueprints
     register_blueprints(app)
-
     @app.errorhandler(Exception)
     def handle_exception(e):
         import traceback

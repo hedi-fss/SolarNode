@@ -1,0 +1,16 @@
+services:
+  solarnode:
+    build: .
+    container_name: solarnode_v2
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+      - PYTHONUNBUFFERED=1
+      - FLASK_ENV=development
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./frontend/templates:/app/templates        # ← This line!
+      - ./frontend/static:/app/static
+    restart: unless-stopped

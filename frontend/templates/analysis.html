@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}AI Analysis - SolarNode{% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-robot text-warning"></i> AI & Analytics</h1>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header"><i class="fas fa-exclamation-triangle text-warning"></i> Anomaly Detection</div>
+            <div class="card-body">
+                <div id="anomaly-list"><p class="text-muted">Loading...</p></div>
+                <button class="btn btn-primary btn-sm mt-3" onclick="trainModel()">
+                    <i class="fas fa-brain"></i> Train Model
+                </button>
+                <button class="btn btn-outline-secondary btn-sm mt-3" onclick="refreshAnomalies()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header"><i class="fas fa-chart-line text-info"></i> Failure Predictions</div>
+            <div class="card-body">
+                <div id="prediction-list"><p class="text-muted">Loading...</p></div>
+                <button class="btn btn-outline-info btn-sm mt-3" onclick="refreshPredictions()">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header"><i class="fas fa-chart-simple"></i> Model Performance</div>
+            <div class="card-body" id="model-performance">
+                <p class="text-muted">Train the model first to see metrics.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-info m-2" onclick="loadModelPerformance()">
+                <i class="fas fa-sync"></i> Refresh Metrics
+            </button>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-dark text-white">
+            <div class="card-header"><i class="fas fa-lightbulb text-warning"></i> Recommendations</div>
+            <div class="card-body" id="recommendation-list">
+                <p class="text-muted">Run simulation to get recommendations</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function trainModel() {
+    const btn = document.querySelector('.btn-primary');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
+    fetch('/ml/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contamination: 0.1 })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('✅ Model trained on ' + data.samples + ' samples!');
+            refreshAnomalies();
+            refreshPredictions();
+            loadModelPerformance();
+        } else {
+            alert('❌ Training failed: ' + (data.error || data.message));
+        }
+    })
+    .catch(err => alert('❌ Error: ' + err.message))
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-brain"></i> Train Model';
+    });
+}
+
+function refreshAnomalies() {
+    fetch('/ml/anomalies?limit=100')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('anomaly-list');
+            const anomalies = data.anomalies || [];
+            if (anomalies.length === 0) {
+                container.innerHTML = '<p class="text-success"><i class="fas fa-check-circle"></i> No anomalies detected</p>';
+                return;
+            }
+            container.innerHTML = anomalies.map(a =>
+                `<div class="alert alert-${a.severity === 'high' ? 'danger' : 'warning'} py-1 mb-1" style="font-size:12px;">
+                    <i class="fas fa-exclamation-circle"></i> Node ${a.node_id}: Battery ${a.battery}% | Score: ${a.anomaly_score.toFixed(2)}
+                </div>`
+            ).join('');
+        })
+        .catch(err => {
+            document.getElementById('anomaly-list').innerHTML = '<p class="text-danger">Error loading anomalies</p>';
+        });
+}
+
+function refreshPredictions() {
+    fetch('/ml/predict')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('prediction-list');
+            const preds = data.predictions || [];
+            if (preds.length === 0) {
+                container.innerHTML = '<p class="text-muted">No predictions available</p>';
+                return;
+            }
+            container.innerHTML = preds.filter(p => p.risk !== 'low').map(p =>
+                `<div class="alert alert-${p.risk === 'high' ? 'danger' : 'warning'} py-1 mb-1" style="font-size:12px;">
+                    <i class="fas fa-battery-${p.risk === 'high' ? 'quarter' : 'half'}"></i> Node ${p.node_id}: ${p.battery}% | ${p.risk.toUpperCase()} risk
+                </div>`
+            ).join('') || '<p class="text-success">All nodes healthy</p>';
+        });
+}
+
+function loadModelPerformance() {
+    fetch('/ml/evaluate')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('model-performance');
+            if (data.error) {
+                container.innerHTML = `<p class="text-warning">${data.error}</p>`;
+                return;
+            }
+            container.innerHTML = `
+                <p><strong>Samples:</strong> ${data.total_samples}</p>
+                <p><strong>Anomalies:</strong> ${data.anomalies_detected} (${data.anomaly_percentage}%)</p>
+                <p><strong>Contamination:</strong> ${(data.contamination*100).toFixed(2)}%</p>
+                <p><strong>Threshold:</strong> ${data.threshold.toFixed(3)}</p>
+                <p><strong>Score Mean:</strong> ${data.mean_score.toFixed(3)}</p>
+                <p><strong>Score Std:</strong> ${data.std_score.toFixed(3)}</p>
+            `;
+        });
+}
+
+// Load on page load
+refreshAnomalies();
+refreshPredictions();
+loadModelPerformance();
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+data/
+logs/
+__pycache__/
+*.pyc
+*.db
+*.sqlite
+.env
+.git/
+.gitignore
+*.zip
+*.tar.gz
+*.md
+*.log
+Dockerfile
+docker-compose.yml

@@ -1,0 +1,123 @@
+/* SolarNode v2.0 Styles */
+body {
+    background: #0f0f23;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.card {
+    background: #1a1a2e !important;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+}
+
+.card-header {
+    background: #1a1a2e !important;
+    border-bottom: 1px solid #2a2a4a;
+    color: #FFD700;
+}
+
+.navbar {
+    background: #0a0a1a !important;
+    border-bottom: 2px solid #FFD700;
+}
+
+.navbar-brand {
+    color: #FFD700 !important;
+    font-weight: bold;
+}
+
+.badge-success {
+    background: #4ecdc4 !important;
+}
+
+.link {
+    stroke: #4FC3F7;
+    stroke-opacity: 0.6;
+}
+
+.node {
+    cursor: pointer;
+}
+
+.node:hover {
+    stroke: #FFD700;
+    stroke-width: 3px;
+}
+
+/* Slider styling */
+.form-range {
+    background: #2a2a4a;
+    height: 6px;
+    border-radius: 3px;
+}
+
+.form-range::-webkit-slider-thumb {
+    background: #FFD700;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.form-range::-moz-range-thumb {
+    background: #FFD700;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* Dark scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1a1a2e;
+}
+::-webkit-scrollbar-thumb {
+    background: #4a4a6a;
+    border-radius: 4px;
+}
+
+/* Loading spinner */
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #FFD700;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Toast notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    margin-bottom: 10px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.toast-success { background: #4ecdc4; }
+.toast-error { background: #ff6b6b; }
+.toast-warning { background: #ffd93d; color: #333; }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}

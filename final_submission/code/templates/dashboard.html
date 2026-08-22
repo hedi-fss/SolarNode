@@ -1,0 +1,693 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SolarNode{% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-chart-line text-warning"></i> Command Center</h1>
+
+<!-- Stats Cards -->
+<div class="row g-4">
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="text-muted">Active Nodes</h6>
+                <h2 id="active-nodes">50</h2>
+                <small><span id="total-nodes">50</span> deployed</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="text-muted">PDR</h6>
+                <h2 id="pdr">94.2%</h2>
+                <small class="text-success">+23% vs baseline</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="text-muted">Lifetime</h6>
+                <h2 id="lifetime">142h</h2>
+                <small class="text-success">2.5× longer</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="text-muted">Survivors</h6>
+                <h2 id="survivors-count">0</h2>
+                <small class="text-info">ISAC active</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="text-muted">Anomalies</h6>
+                <h2 id="anomaly-count">0</h2>
+                <small class="text-warning" id="ai-status">AI: Idle</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body">
+                <h6 class="text-muted">ML Status</h6>
+                <h2 id="ml-status"><span class="badge bg-secondary">Untrained</span></h2>
+                <small>Click train below</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Controls -->
+<div class="row g-4 mt-2">
+    <div class="col-md-12">
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <i class="fas fa-sliders-h text-warning"></i> Simulation & AI Controls
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Nodes</label>
+                        <input type="range" class="form-range" id="node-slider" min="10" max="150" value="50" step="5">
+                        <span id="node-value" class="badge bg-info">50</span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Failure Rate (%)</label>
+                        <input type="range" class="form-range" id="failure-slider" min="0" max="50" value="20" step="5">
+                        <span id="failure-value" class="badge bg-warning text-dark">20%</span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">5G/6G Mode</label>
+                        <select class="form-select" id="mode-select">
+                            <option value="ntn">NTN (Satellite)</option>
+                            <option value="d2d">D2D (Device-to-Device)</option>
+                            <option value="hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button class="btn btn-success btn-sm" onclick="runSimulation()" id="sim-btn">
+                            <i class="fas fa-play"></i> Run
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="runLifetimeSim()" id="life-btn">
+                            <i class="fas fa-chart-line"></i> Lifetime
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="exportCSV()">
+                            <i class="fas fa-file-export"></i> CSV
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="trainAI()" id="train-btn">
+                            <i class="fas fa-brain"></i> Train AI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-7">
+        <!-- Topology -->
+        <div class="card bg-dark text-white">
+            <div class="card-header">
+                <i class="fas fa-network-wired"></i> Network Topology
+                <span class="float-end">
+                    <span id="sim-status" style="display:none;"><i class="fas fa-spinner fa-spin"></i> Running...</span>
+                </span>
+            </div>
+            <div class="card-body">
+                <div id="topology-container" style="height:350px; background:#1a1a2e; border-radius:8px;"></div>
+            </div>
+        </div>
+        <!-- Lifetime -->
+        <div class="card bg-dark text-white mt-3">
+            <div class="card-header"><i class="fas fa-chart-line"></i> Network Lifetime</div>
+            <div class="card-body">
+                <div id="lifetime-chart" style="height:200px; background:#1a1a2e; border-radius:8px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-5">
+        <!-- PDR Chart -->
+        <div class="card bg-dark text-white">
+            <div class="card-header"><i class="fas fa-chart-bar"></i> PDR vs Failure Rate</div>
+            <div class="card-body">
+                <div id="pdr-chart" style="height:200px;"></div>
+            </div>
+        </div>
+        <!-- 5G/6G -->
+        <div class="card bg-dark text-white mt-3">
+            <div class="card-header"><i class="fas fa-satellite-dish text-warning"></i> 5G/6G Status</div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6"><small class="text-muted">NTN</small><br><span id="ntn-badge" class="badge bg-success">CONNECTED</span></div>
+                    <div class="col-6"><small class="text-muted">D2D</small><br><span id="d2d-badge" class="badge bg-success">ENABLED</span></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-6"><small class="text-muted">ISAC</small><br><span id="isac-badge" class="badge bg-info">SCANNING</span></div>
+                    <div class="col-6"><small class="text-muted">Mode</small><br><span id="mode-badge" class="badge bg-primary">NTN</span></div>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary mt-2" onclick="refresh5GStatus()"><i class="fas fa-sync"></i> Refresh</button>
+                <button class="btn btn-sm btn-outline-info mt-2" onclick="simulateISAC()"><i class="fas fa-search"></i> Scan</button>
+            </div>
+        </div>
+        <!-- Anomalies -->
+        <div class="card bg-dark text-white mt-3">
+            <div class="card-header">
+                <i class="fas fa-exclamation-triangle"></i> AI Anomalies
+                <span class="float-end"><button class="btn btn-sm btn-outline-danger" onclick="refreshAnomalies()"><i class="fas fa-sync"></i> Refresh</button></span>
+            </div>
+            <div class="card-body" id="anomaly-list"><p class="text-muted">Train AI first</p></div>
+        </div>
+        <!-- Predictions -->
+        <div class="card bg-dark text-white mt-3">
+            <div class="card-header">
+                <i class="fas fa-battery-quarter"></i> Failure Predictions
+                <span class="float-end"><button class="btn btn-sm btn-outline-warning" onclick="refreshPredictions()"><i class="fas fa-sync"></i> Refresh</button></span>
+            </div>
+            <div class="card-body" id="prediction-list"><p class="text-muted">Predictions appear here</p></div>
+        </div>
+        <!-- Recommendations -->
+        <div class="card bg-dark text-white mt-3">
+            <div class="card-header"><i class="fas fa-lightbulb text-warning"></i> AI Recommendations</div>
+            <div class="card-body" id="recommendation-list"><p class="text-muted">Run simulation first</p></div>
+        </div>
+        <!-- Hardware -->
+        <div class="card bg-dark text-white mt-3">
+            <div class="card-header">
+                <i class="fas fa-microchip text-success"></i> Hardware Status
+                <span class="float-end">
+                    <button class="btn btn-sm btn-outline-success" onclick="connectHardware()"><i class="fas fa-plug"></i> Connect</button>
+                    <button class="btn btn-sm btn-outline-info" onclick="startMock()"><i class="fas fa-vial"></i> Mock</button>
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6"><small class="text-muted">Serial</small><br><span id="serial-status" class="badge bg-secondary">Disconnected</span></div>
+                    <div class="col-6"><small class="text-muted">Mock</small><br><span id="mock-status" class="badge bg-secondary">Stopped</span></div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-6"><small class="text-muted">Online</small><br><span id="online-nodes">0</span></div>
+                    <div class="col-6"><small class="text-muted">Last</small><br><span id="last-packet">--</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// SLIDERS
+// ============================================================
+const nodeSlider = document.getElementById('node-slider');
+const failureSlider = document.getElementById('failure-slider');
+const modeSelect = document.getElementById('mode-select');
+const nodeValue = document.getElementById('node-value');
+const failureValue = document.getElementById('failure-value');
+const totalNodesSpan = document.getElementById('total-nodes');
+
+nodeSlider.addEventListener('input', function() {
+    nodeValue.textContent = this.value;
+    totalNodesSpan.textContent = this.value;
+});
+failureSlider.addEventListener('input', function() {
+    failureValue.textContent = this.value + '%';
+});
+modeSelect.addEventListener('change', function() {
+    document.getElementById('mode-badge').textContent = this.value.toUpperCase();
+});
+
+// ============================================================
+// D3 TOPOLOGY
+// ============================================================
+const container = document.getElementById('topology-container');
+const width = container.clientWidth || 600;
+const height = 350;
+
+const svg = d3.select('#topology-container')
+    .append('svg')
+    .attr('width', width)
+    .attr('height', height);
+
+const simulation = d3.forceSimulation()
+    .force('link', d3.forceLink().id(d => d.id).distance(100))
+    .force('charge', d3.forceManyBody().strength(-300))
+    .force('center', d3.forceCenter(width/2, height/2));
+
+function generateRandomTopology(n=50) {
+    const nodes = Array.from({length: n}, (_, i) => ({
+        id: i,
+        is_gateway: i === 0,
+        x: Math.random() * width,
+        y: Math.random() * height
+    }));
+    const links = [];
+    for (let i = 0; i < n; i++) {
+        for (let j = i+1; j < n; j++) {
+            if (Math.random() < 0.12) links.push({source: i, target: j});
+        }
+    }
+    return {nodes, links};
+}
+
+let graphData = generateRandomTopology(50);
+
+function updateTopology() {
+    const link = svg.selectAll('.link')
+        .data(graphData.links, d => `${d.source}-${d.target}`);
+    link.enter().append('line')
+        .attr('class', 'link')
+        .attr('stroke', '#4FC3F7')
+        .attr('stroke-width', 1.5)
+        .merge(link);
+    link.exit().remove();
+
+    const node = svg.selectAll('.node')
+        .data(graphData.nodes, d => d.id);
+    const nodeEnter = node.enter().append('circle')
+        .attr('class', 'node')
+        .attr('r', d => d.is_gateway ? 14 : 7)
+        .attr('fill', d => d.is_gateway ? '#FFD700' : '#4FC3F7')
+        .attr('stroke', '#1a1a2e')
+        .attr('stroke-width', 2)
+        .call(d3.drag()
+            .on('start', (event, d) => {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            })
+            .on('drag', (event, d) => {
+                d.fx = event.x;
+                d.fy = event.y;
+            })
+            .on('end', (event, d) => {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }));
+    nodeEnter.append('title')
+        .text(d => `Node ${d.id}${d.is_gateway ? ' (Gateway)' : ''}`);
+    node.merge(nodeEnter);
+    node.exit().remove();
+
+    simulation.nodes(graphData.nodes);
+    simulation.force('link').links(graphData.links);
+    simulation.alpha(1).restart();
+}
+
+simulation.on('tick', () => {
+    svg.selectAll('.link')
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+    svg.selectAll('.node')
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y);
+});
+updateTopology();
+
+// ============================================================
+// PDR CHART
+// ============================================================
+function updatePDRChart(data) {
+    const margin = {top:15, right:15, bottom:35, left:35};
+    const cw = 340 - margin.left - margin.right;
+    const ch = 150 - margin.top - margin.bottom;
+    d3.select('#pdr-chart').selectAll('*').remove();
+    const chartSvg = d3.select('#pdr-chart')
+        .append('svg').attr('width', 340).attr('height', 180)
+        .append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+    const x = d3.scaleBand()
+        .domain(data.failure_rates.map(d => `${d*100}%`))
+        .range([0, cw]).padding(0.2);
+    const y = d3.scaleLinear().domain([0,100]).range([ch,0]);
+    chartSvg.selectAll('.solarnode-bar')
+        .data(data.failure_rates)
+        .enter()
+        .append('rect')
+        .attr('x', (d,i) => x(`${d*100}%`))
+        .attr('y', (d,i) => y(data.solarnode_pdr[i]))
+        .attr('width', x.bandwidth()/2)
+        .attr('height', (d,i) => ch - y(data.solarnode_pdr[i]))
+        .attr('fill', '#4ecdc4');
+    chartSvg.selectAll('.random-bar')
+        .data(data.failure_rates)
+        .enter()
+        .append('rect')
+        .attr('x', (d,i) => x(`${d*100}%`) + x.bandwidth()/2)
+        .attr('y', (d,i) => y(data.random_pdr[i]))
+        .attr('width', x.bandwidth()/2)
+        .attr('height', (d,i) => ch - y(data.random_pdr[i]))
+        .attr('fill', '#ff6b6b');
+    chartSvg.append('g')
+        .call(d3.axisBottom(x)).style('color','#aaa').style('font-size','8px');
+    chartSvg.append('g')
+        .call(d3.axisLeft(y)).style('color','#aaa').style('font-size','8px');
+}
+
+fetch('/api/simulation/compare')
+    .then(r => r.json())
+    .then(data => updatePDRChart(data));
+
+// ============================================================
+// RUN SIMULATION
+// ============================================================
+function runSimulation() {
+    if (window.simRunning) return;
+    window.simRunning = true;
+    const btn = document.getElementById('sim-btn');
+    const status = document.getElementById('sim-status');
+    btn.disabled = true;
+    status.style.display = 'inline';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    const n_nodes = parseInt(nodeSlider.value);
+    const failure_rate = parseInt(failureSlider.value) / 100;
+
+    fetch('/api/simulation/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes: n_nodes, failure_rate: failure_rate, runs: 30 })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('pdr').textContent = data.pdr_mean.toFixed(1) + '%';
+        document.getElementById('active-nodes').textContent = Math.round(n_nodes * (1 - failure_rate));
+        graphData = generateRandomTopology(n_nodes);
+        updateTopology();
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+            btn.disabled = false;
+            status.style.display = 'none';
+        }, 1500);
+    })
+    .catch(err => {
+        console.error(err);
+        btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fas fa-play"></i>';
+            btn.disabled = false;
+            status.style.display = 'none';
+        }, 1500);
+    })
+    .finally(() => { window.simRunning = false; });
+}
+
+// ============================================================
+// LIFETIME SIMULATION
+// ============================================================
+function runLifetimeSim() {
+    if (window.lifeRunning) return;
+    window.lifeRunning = true;
+    const btn = document.getElementById('life-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    const n_nodes = parseInt(nodeSlider.value);
+
+    fetch('/api/simulation/lifetime?nodes=' + n_nodes + '&hours=200')
+        .then(r => r.json())
+        .then(data => {
+            const margin = {top: 15, right: 15, bottom: 30, left: 30};
+            const container = document.getElementById('lifetime-chart');
+            const cwidth = container.clientWidth - margin.left - margin.right || 400;
+            const cheight = 150 - margin.top - margin.bottom;
+
+            d3.select('#lifetime-chart').selectAll('*').remove();
+
+            const chartSvg = d3.select('#lifetime-chart')
+                .append('svg')
+                .attr('width', cwidth + margin.left + margin.right)
+                .attr('height', cheight + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            const x = d3.scaleLinear()
+                .domain([0, data.time_hours.length])
+                .range([0, cwidth]);
+
+            const y = d3.scaleLinear()
+                .domain([0, data.max_nodes])
+                .range([cheight, 0]);
+
+            const lineGen = d3.line()
+                .x((d, i) => x(i))
+                .y(d => y(d));
+
+            chartSvg.append('path')
+                .datum(data.random)
+                .attr('fill', 'none')
+                .attr('stroke', '#ff6b6b')
+                .attr('stroke-width', 2)
+                .attr('d', lineGen);
+
+            chartSvg.append('path')
+                .datum(data.solarnode)
+                .attr('fill', 'none')
+                .attr('stroke', '#4ecdc4')
+                .attr('stroke-width', 2)
+                .attr('d', lineGen);
+
+            chartSvg.append('g')
+                .call(d3.axisBottom(x))
+                .style('color', '#aaa')
+                .style('font-size', '8px');
+
+            chartSvg.append('g')
+                .call(d3.axisLeft(y))
+                .style('color', '#aaa')
+                .style('font-size', '8px');
+
+            document.getElementById('lifetime').textContent = data.time_hours.length + 'h';
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-chart-line"></i>';
+                btn.disabled = false;
+            }, 1500);
+        })
+        .catch(err => {
+            console.error(err);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fas fa-chart-line"></i>';
+                btn.disabled = false;
+            }, 1500);
+        })
+        .finally(() => {
+            window.lifeRunning = false;
+        });
+}
+
+// Auto-run lifetime on page load
+setTimeout(runLifetimeSim, 1000);
+
+// ============================================================
+// 5G/6G
+// ============================================================
+function refresh5GStatus() {
+    fetch('/api/fiveg/status')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('ntn-badge').textContent = data.ntn.status;
+            document.getElementById('ntn-badge').className = 'badge ' + (data.ntn.status === 'CONNECTED' ? 'bg-success' : 'bg-warning text-dark');
+            document.getElementById('d2d-badge').textContent = data.d2d.active ? 'ENABLED' : 'DISABLED';
+            document.getElementById('d2d-badge').className = 'badge ' + (data.d2d.active ? 'bg-success' : 'bg-danger');
+            document.getElementById('isac-badge').textContent = data.isac.active ? 'ACTIVE' : 'INACTIVE';
+            document.getElementById('isac-badge').className = 'badge ' + (data.isac.active ? 'bg-info' : 'bg-secondary');
+        });
+}
+function simulateISAC() {
+    const n_nodes = parseInt(nodeSlider.value);
+    fetch(`/api/fiveg/isac?nodes=${n_nodes}`)
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('survivors-count').textContent = data.total;
+            if (data.total > 0) {
+                let msg = '🆘 Detected ' + data.total + ' survivors:\n';
+                data.survivors.forEach(s => {
+                    msg += `- Node ${s.node_id}: ${s.type} (${Math.round(s.confidence*100)}%)\n`;
+                });
+                alert(msg);
+            }
+        });
+}
+function exportCSV() {
+    window.open('/api/export/csv', '_blank');
+}
+
+// ============================================================
+// AI FUNCTIONS
+// ============================================================
+function trainAI() {
+    const btn = document.getElementById('train-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
+    document.getElementById('ml-status').innerHTML = '<span class="badge bg-warning text-dark">Training...</span>';
+    fetch('/ml/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contamination: 0.1 })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            document.getElementById('ml-status').innerHTML = '<span class="badge bg-success">Trained ✅</span>';
+            document.getElementById('ai-status').textContent = 'AI: Ready';
+            alert('✅ AI trained on ' + data.samples + ' samples!');
+            refreshAnomalies();
+            refreshPredictions();
+            refreshRecommendations();
+        } else {
+            alert('❌ Training failed: ' + (data.error || data.message));
+        }
+    })
+    .catch(err => {
+        alert('❌ Error: ' + err.message);
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-brain"></i> Train AI';
+    });
+}
+
+function refreshAnomalies() {
+    fetch('/ml/anomalies?limit=100')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('anomaly-list');
+            const anomalies = data.anomalies || [];
+            document.getElementById('anomaly-count').textContent = anomalies.length;
+            if (anomalies.length === 0) {
+                container.innerHTML = '<p class="text-success">✅ No anomalies</p>';
+                return;
+            }
+            container.innerHTML = anomalies.map(a =>
+                `<div class="alert alert-${a.severity === 'high' ? 'danger' : 'warning'} py-1 mb-1" style="font-size:12px;">
+                    <i class="fas fa-exclamation-circle"></i> Node ${a.node_id}: Battery ${a.battery}% | Score: ${a.anomaly_score.toFixed(2)}
+                </div>`
+            ).join('');
+        });
+}
+
+function refreshPredictions() {
+    fetch('/ml/predict')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('prediction-list');
+            const preds = data.predictions || [];
+            if (preds.length === 0) {
+                container.innerHTML = '<p class="text-muted">No predictions</p>';
+                return;
+            }
+            container.innerHTML = preds.filter(p => p.risk !== 'low').map(p =>
+                `<div class="alert alert-${p.risk === 'high' ? 'danger' : 'warning'} py-1 mb-1" style="font-size:12px;">
+                    <i class="fas fa-battery-${p.risk === 'high' ? 'quarter' : 'half'}"></i> Node ${p.node_id}: ${p.battery}% | ${p.risk.toUpperCase()} risk
+                </div>`
+            ).join('') || '<p class="text-success">All nodes healthy</p>';
+        });
+}
+
+function refreshRecommendations() {
+    fetch('/ml/recommendations')
+        .then(r => r.json())
+        .then(data => {
+            const container = document.getElementById('recommendation-list');
+            const recs = data.recommendations || [];
+            if (recs.length === 0 || recs[0].message.includes('No network data')) {
+                container.innerHTML = '<p class="text-muted">Run simulation first</p>';
+                return;
+            }
+            container.innerHTML = recs.map(r =>
+                `<div class="alert alert-${r.severity === 'high' ? 'danger' : r.severity === 'medium' ? 'warning' : 'info'} py-1 mb-1" style="font-size:12px;">
+                    <strong>${r.type}:</strong> ${r.message}<br>
+                    <span style="font-size:10px;color:#aaa;">Action: ${r.action}</span>
+                </div>`
+            ).join('');
+        });
+}
+
+// ============================================================
+// HARDWARE FUNCTIONS
+// ============================================================
+function connectHardware() {
+    fetch('/api/hardware/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ port: null })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'connected') {
+            document.getElementById('serial-status').textContent = 'Connected';
+            document.getElementById('serial-status').className = 'badge bg-success';
+        } else {
+            alert('Failed: ' + data.message);
+        }
+    });
+}
+
+function startMock() {
+    fetch('/api/hardware/mock/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodes: 50, interval: 5 })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('mock-status').textContent = 'Running';
+        document.getElementById('mock-status').className = 'badge bg-success';
+        alert('Mock data started!');
+    });
+}
+
+function stopMock() {
+    fetch('/api/hardware/mock/stop', { method: 'POST' })
+        .then(() => {
+            document.getElementById('mock-status').textContent = 'Stopped';
+            document.getElementById('mock-status').className = 'badge bg-secondary';
+        });
+}
+
+function refreshHardwareStatus() {
+    fetch('/api/hardware/status')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('serial-status').textContent = data.serial_connected ? 'Connected' : 'Disconnected';
+            document.getElementById('serial-status').className = 'badge ' + (data.serial_connected ? 'bg-success' : 'bg-secondary');
+            document.getElementById('mock-status').textContent = data.mock_running ? 'Running' : 'Stopped';
+            document.getElementById('mock-status').className = 'badge ' + (data.mock_running ? 'bg-success' : 'bg-secondary');
+            document.getElementById('online-nodes').textContent = data.mock_nodes || 0;
+        });
+}
+
+// ============================================================
+// ML STATUS
+// ============================================================
+function loadMLStatus() {
+    fetch('/ml/status')
+        .then(r => r.json())
+        .then(data => {
+            if (data.is_trained) {
+                document.getElementById('ml-status').innerHTML = '<span class="badge bg-success">Trained ✅</span>';
+                document.getElementById('ai-status').textContent = 'AI: Ready';
+                refreshAnomalies();
+                refreshPredictions();
+                refreshRecommendations();
+            }
+        });
+}
+
+// ============================================================
+// AUTO-LOAD
+// ============================================================
+setTimeout(() => {
+    refresh5GStatus();
+    loadMLStatus();
+    refreshHardwareStatus();
+}, 1000);
+setInterval(refreshHardwareStatus, 10000);
+</script>
+{% endblock %}
